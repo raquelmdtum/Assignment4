@@ -1,14 +1,14 @@
-kf_logLik_dt <- function(par, df) {
+kf_logLik_dt <- function(par, df, return_residuals = FALSE) {
   # par: vector of parameters
   # df: data frame with observations and inputs as columns (Y, Ta, S, I)
   # par: Could be on the form c(A11, A12, A21, A22, B11, B12, B21, B22, Q11, Q12, Q22)
-  A   <- matrix() # transition matrix
-  B   <- matrix() # input matrix
-  Sigma1lt <- matrix() # lower-triangle of system covariance matrix
+  A <- matrix(par[1], 1, 1) # transition matrix
+  B <- matrix(par[2:4], 1, 3) # input matrix
+  Sigma1lt <- matrix(par[5], 1, 1) # lower-triangle of system covariance matrix
   Sigma1   <- Sigma1lt %*% t(Sigma1lt) # THAT IS!!! The system covariance matrix is given by Qlt %*% t(Qlt) (and is this symmetric positive definite)
-  C   <- matrix() # observation matrix
-  Sigma2 <- matrix() # observation noise covariance matrix
-  X0  <- matrix() # initial state
+  C <- matrix(1, 1, 1) # observation matrix
+  Sigma2 <- matrix(par[6]^2, 1, 1) # observation noise covariance matrix
+  X0 <- matrix(par[7], 1, 1) # initial state
 
   # Variables
   obs_cols <- c("Y") # observation column names
@@ -26,23 +26,29 @@ kf_logLik_dt <- function(par, df) {
   P_est  <- diag(1e1, n)                   # X0 prior covariance
   logLik <- 0
 
+  residuals <- numeric(Tn)
+
   for (t in 1:Tn) {
-    # prediction step
-    x_pred <- # write the prediction step
-    P_pred <- # write the prediction step (Sigma_xx)
+    x_pred <- A %*% x_est + B %*% t(U[t, , drop = FALSE])
+    P_pred <- A %*% P_est %*% t(A) + Sigma1
 
-    # innovation step
-    y_pred  <- # predicted observation
-    S_t     <- # predicted observation covariance (Sigma_yy)
-    innov   <- # innovation (one-step prediction error)
+    y_pred  <- C %*% x_pred
+    S_t     <- C %*% P_pred %*% t(C) + Sigma2
+    innov   <- Y[t] - y_pred
 
-    # log-likelihood contribution
-    logLik <- logLik - 0.5*(sum(log(2*pi*S_t)) + t(innov) %*% solve(S_t, innov))
+    residuals[t] <- innov  # store residual
 
-    # update step
-    K_t    <- # Kalman gain
-    x_est  <- # reconstructed state
-    P_est  <- # reconstructed covariance
+    logLik <- logLik - 0.5 * (log(2 * pi) + log(det(S_t)) + t(innov) %*% solve(S_t, innov))
+
+    K_t    <- P_pred %*% t(C) %*% solve(S_t)
+    x_est  <- x_pred + K_t %*% innov
+    P_est  <- (diag(n) - K_t %*% C) %*% P_pred
+  }
+
+  if (return_residuals) {
+    return(residuals)
+  } else {
+    return(as.numeric(logLik))
   }
 
   as.numeric(logLik)
