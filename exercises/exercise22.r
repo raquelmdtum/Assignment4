@@ -1,6 +1,8 @@
 source("functions/functions_exercise2.R")
 df <- read.csv("transformer_data.csv")
 
+# ---------- Exercise 2.2 ----------
+
 # Run parameter estimation
 start_par <- c(0.9, 0.01, 0.01, 0.01, 1.0, 1.0, 20.0)
 lower <- c(-1.5, -1, -1, -1, 1e-3, 1e-3, 10)
