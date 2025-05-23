@@ -157,27 +157,51 @@ y_max <- max(c(X, Y, kf$x_pred, kf$x_filt))
 par(mar = c(5, 4, 4, 8), xpd = TRUE)  # 增加右边距，并允许越界绘图
 
 # open a new window
-windows(width = 9, height = 7)
+windows(width = 12, height = 10)
 
 # set the size
 par(mar = c(5, 4, 4, 8), xpd = TRUE)
 
-# plot
+# the limir of CI
+ci_min <- min(lower)
+ci_max <- max(upper)
+
+# add the margin
+y_min <- min(c(X, Y, kf$x_pred, kf$x_filt))
+y_max <- max(c(X, Y, kf$x_pred, kf$x_filt))
+
+# correct the range of axis y
+buffer <- 0.5  # buffer
+ylim_low <- min(y_min, ci_min) - buffer
+ylim_high <- max(y_max, ci_max) + buffer
+
+# Open a new plotting window and set margins
+windows(width = 12, height = 10)
+par(mar = c(5, 4, 4, 2) + 0.1)
+
+# Plotting
 plot(time, X, type = "l", col = "black", lwd = 2,
-     ylim = c(y_min - 2, y_max + 2),
+     ylim = c(ylim_low, ylim_high), xlim = c(min(time), max(time)),
      xlab = "Time", ylab = "Value", main = "Kalman Filter Prediction")
 
+# Add confidence interval shading
+polygon(c(time, rev(time)), c(lower, rev(upper)), 
+        col = rgb(0, 0, 1, 0.1), border = NA)
+
+# Add additional lines
 lines(time, Y, col = "red", lty = 2, lwd = 1.5)
 lines(time, kf$x_pred, col = "blue", lwd = 2)
-lines(time, lower, col = "blue", lty = 3)
-lines(time, upper, col = "blue", lty = 3)
 lines(time, kf$x_filt, col = "darkgreen", lty = 4, lwd = 2)
 
-legend("topright", inset = c(-0.25, 0),
+# Legend in the bottom right corner
+legend("bottomright",
        legend = c("True State (X)", "Observation (Y)", "Predicted (X̂_t+1|t)",
                   "Filtered (X̂_t|t)", "95% CI"),
-       col = c("black", "red", "blue", "darkgreen", "blue"),
-       lty = c(1, 2, 1, 4, 3), lwd = c(2, 1.5, 2, 2, 1), bty = "n") 
+       col = c("black", "red", "blue", "darkgreen", rgb(0, 0, 1, 0.1)),
+       lty = c(1, 2, 1, 4, NA), lwd = c(2, 1.5, 2, 2, NA),
+       fill = c(NA, NA, NA, NA, rgb(0, 0, 1, 0.1)),
+       border = NA, bty = "n")
+
 
 #-------1.4------for (1,0.9,1),(1,0.9,5)
 
